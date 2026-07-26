@@ -16,27 +16,43 @@ python3 -m http.server 8000
 
 ## Design notes
 
-Every colour on the page already exists in the app, so the site and the product cannot
-drift apart:
+The palette is **Gruvbox Dark**, taken value-for-value from `AppTheme.gruvboxDark` in
+`Sources/Soprano/Config/Theme.swift` — the app's own default theme. Nothing here is a
+generic Gruvbox approximation, so the site and the product cannot drift apart.
 
-| Token | Value | Comes from |
+| Token | Value | Role |
 |---|---|---|
-| Ground / panel | `#08080f` · `#0f0f1e` | `app-icon.svg` background gradient |
-| Violet accent | `#a78bfa` · `#7c3aed` | `app-icon.svg` accent gradient |
-| Emerald (`READY`) | `#34d399` | `app-icon.svg` status gradient |
-| Amber (`NEEDS INPUT`) | `#fabd2f` | Gruvbox Dark, Soprano's default theme |
-| Codex | `#10a37f` | `Config/DefaultAgents.swift` |
-| Claude Code | `#da7756` | `Config/DefaultAgents.swift` |
-| OpenCode | `#58a6ff` | `Config/DefaultAgents.swift` |
+| `--bg-hard` · `--bg` | `#1d2021` · `#282828` | Panels and page ground |
+| `--fg0` · `--fg` | `#fbf1c7` · `#ebdbb2` | Wordmark and body text |
+| `--orange` | `#fe8019` | `accent` — primary action, hover rules |
+| `--yellow` | `#fabd2f` | `accentStrong` — `NEEDS INPUT`, the playhead |
+| `--green` | `#b8bb26` | `success` — `READY`, shell prompts |
+| `--red` | `#fb4934` | `danger` — `ERROR` |
+| `--aqua` · `--blue` | `#8ec07c` · `#83a598` | Agent voices |
+
+Agents map onto the palette rather than carrying their own brand colours, so the page
+stays in one key: Codex → aqua, Claude Code → orange, OpenCode → blue.
 
 Type pairs a classical serif for the wordmark against monospace for every status label —
 a musical name set against a terminal voice. Both stacks are system fonts, so there are
 no webfont requests and nothing to self-host.
 
+## Motion
+
 The hero is "the score": one lane per agent, running in parallel, with a single lane
-stalling into amber. It is the product's actual question — *which agent needs me right
-now?* — rather than a screenshot in a browser frame. Lane motion is disabled under
-`prefers-reduced-motion`.
+stalling into amber. It states the product's actual question — *which agent needs me
+right now?* — rather than showing a screenshot in a browser frame.
+
+- **Entrance.** The wordmark's letters rise one at a time, then the score's lanes enter
+  in sequence, the way voices enter a score.
+- **Playhead.** A conductor's baton sweeps the score on a 9s loop.
+- **Split tree.** In the Layout section, one pane becomes four on a 14s loop, following
+  the same percentages a real `SplitNode` tree would produce.
+- **Typing.** The install block types itself out the first time it scrolls into view.
+- **Ambient.** A slow warm drift plus a light film grain, suiting Gruvbox's analogue feel.
+
+Every one of these is disabled under `prefers-reduced-motion: reduce`, where the split
+tree settles into its finished four-pane state and the install block renders instantly.
 
 ## Deploying
 

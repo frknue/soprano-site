@@ -12,60 +12,97 @@
 <meta property="og:type" content="website">
 
 <style>
+/* ═══════════════════════════════════════════════════════════════
+   Gruvbox Dark — values lifted from Sources/Soprano/Config/Theme.swift
+   ═══════════════════════════════════════════════════════════════ */
 :root {
-  --ink:        #08080f;
-  --ink-panel:  #0f0f1e;
-  --ink-raised: #16162b;
-  --line:       #23233f;
-  --line-soft:  #191930;
-  --paper:      #e9e7f2;
-  --muted:      #8f8caa;
-  --violet:     #a78bfa;
-  --violet-deep:#7c3aed;
+  --bg-hard: #1d2021;
+  --bg:      #282828;
+  --bg1:     #3c3836;
+  --bg2:     #504945;
+  --bg3:     #665c54;
 
-  --amber:   #fabd2f;
-  --emerald: #34d399;
-  --codex:    #10a37f;
-  --claude:   #da7756;
-  --opencode: #58a6ff;
+  --fg0:  #fbf1c7;
+  --fg:   #ebdbb2;
+  --fg2:  #d5c4a1;
+  --fg4:  #a89984;
+  --gray: #928374;
+
+  --orange: #fe8019;
+  --yellow: #fabd2f;
+  --green:  #b8bb26;
+  --red:    #fb4934;
+  --blue:   #83a598;
+  --aqua:   #8ec07c;
+  --purple: #d3869b;
+
+  /* Agent voices, mapped onto the palette */
+  --codex:    var(--aqua);
+  --claude:   var(--orange);
+  --opencode: var(--blue);
 
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --measure: 68rem;
+  --measure: 70rem;
   --gutter: clamp(1.25rem, 5vw, 3rem);
+  --ease: cubic-bezier(.22, 1, .36, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-body);
   font-size: 17px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* Ambient wash echoing the icon's corner gradient. */
-body::before {
-  content: "";
+/* Warm gruvbox wash, drifting slowly. */
+.ambient {
   position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(60rem 40rem at 12% -10%, rgba(124, 58, 237, .20), transparent 60%),
-    radial-gradient(50rem 35rem at 95% 5%, rgba(52, 211, 153, .07), transparent 60%);
-  pointer-events: none;
+  inset: -20%;
   z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 30rem at 18% 8%,  rgba(254, 128, 25, .16), transparent 62%),
+    radial-gradient(34rem 26rem at 82% 4%,  rgba(250, 189, 47, .10), transparent 62%),
+    radial-gradient(40rem 32rem at 55% 92%, rgba(184, 187, 38, .07), transparent 64%);
+  animation: drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(2%, -2.5%, 0) scale(1.08); }
+}
+
+/* Film grain — gruvbox is a warm, slightly analogue palette. */
+.grain {
+  position: fixed;
+  inset: -100%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 700ms steps(3) infinite;
+}
+
+@keyframes grain {
+  0%   { transform: translate(0, 0); }
+  33%  { transform: translate(-3%, 2%); }
+  66%  { transform: translate(2%, -3%); }
+  100% { transform: translate(0, 0); }
 }
 
 .wrap {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   max-width: var(--measure);
   margin-inline: auto;
@@ -75,98 +112,135 @@ body::before {
 a { color: inherit; }
 
 :focus-visible {
-  outline: 2px solid var(--violet);
+  outline: 2px solid var(--yellow);
   outline-offset: 3px;
   border-radius: 2px;
 }
+
+::selection { background: rgba(250, 189, 47, .28); color: var(--fg0); }
 
 /* ── Utility type ─────────────────────────────────────────────── */
 
 .eyebrow {
   font-family: var(--font-mono);
   font-size: .7rem;
-  letter-spacing: .18em;
+  letter-spacing: .2em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--gray);
   margin: 0;
 }
 
-/* Musical staff: five hairlines, used only where a section truly begins. */
 .staff {
   height: 9px;
   margin: 0;
   border: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--line-soft) 0 1px,
-    transparent 1px 3px
-  );
-  opacity: .8;
+  background: repeating-linear-gradient(to bottom, var(--bg1) 0 1px, transparent 1px 3px);
+  opacity: .7;
 }
 
 /* ── Masthead ─────────────────────────────────────────────────── */
 
+/* Full-bleed bar; the content inside stays on the measure. */
 .masthead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(40, 40, 40, .72);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s, background .3s;
+}
+
+.masthead.stuck { border-bottom-color: var(--bg1); }
+
+.masthead-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding-block: 1.5rem;
+  padding-block: 1.1rem;
 }
 
 .mark {
   display: flex;
   align-items: center;
-  gap: .6rem;
+  gap: .65rem;
   font-family: var(--font-display);
-  font-size: 1.15rem;
-  letter-spacing: .02em;
+  font-size: 1.2rem;
   text-decoration: none;
+  color: var(--fg0);
 }
 
-/* The app icon is dark navy; on a dark page it needs a ring to read as a tile. */
 .mark img {
-  width: 26px;
-  height: 26px;
+  width: 27px; height: 27px;
   display: block;
   border-radius: 7px;
-  box-shadow: 0 0 0 1px var(--line), 0 1px 6px rgba(0, 0, 0, .5);
+  box-shadow: 0 0 0 1px var(--bg2), 0 2px 10px rgba(0, 0, 0, .45);
+  transition: transform .4s var(--ease), box-shadow .4s var(--ease);
 }
 
-.masthead nav {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  font-family: var(--font-mono);
-  font-size: .82rem;
+.mark:hover img {
+  transform: rotate(-4deg) scale(1.06);
+  box-shadow: 0 0 0 1px var(--orange), 0 4px 18px rgba(254, 128, 25, .3);
 }
 
-.masthead nav a { color: var(--muted); text-decoration: none; transition: color .18s; }
-.masthead nav a:hover { color: var(--paper); }
+.masthead nav { display: flex; align-items: center; gap: 1.6rem; font-family: var(--font-mono); font-size: .8rem; }
+
+.masthead nav a {
+  color: var(--fg4);
+  text-decoration: none;
+  position: relative;
+  padding-block: .2rem;
+  transition: color .2s;
+}
+
+.masthead nav a::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 1px;
+  background: var(--orange);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .35s var(--ease);
+}
+
+.masthead nav a:hover { color: var(--fg0); }
+.masthead nav a:hover::after { transform: scaleX(1); transform-origin: left; }
 
 /* ── Hero ─────────────────────────────────────────────────────── */
 
-.hero { padding-block: clamp(2rem, 6vw, 3.5rem) clamp(2rem, 5vw, 3rem); }
+.hero { padding-block: clamp(2.5rem, 7vw, 4.5rem) clamp(2rem, 5vw, 3rem); }
 
 .hero h1 {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(3.25rem, 11vw, 7rem);
-  line-height: .92;
+  font-size: clamp(3.25rem, 12vw, 7.5rem);
+  line-height: .9;
   letter-spacing: -.02em;
   margin: 1rem 0 0;
+  color: var(--fg0);
+  display: flex;
+  flex-wrap: wrap;
 }
 
-/* Lede and supporting copy sit side by side so the hero stays short enough
-   to leave the score visible on load. */
-.hero-copy {
-  display: grid;
-  gap: 1.25rem 3rem;
-  margin-top: 1.5rem;
-  align-items: start;
+/* Each letter is a voice entering the score. */
+.hero h1 span {
+  display: inline-block;
+  transform: translateY(.5em);
+  opacity: 0;
+  animation: voice-in .9s var(--ease) forwards;
+  animation-delay: calc(.12s * var(--i));
 }
 
-@media (min-width: 860px) {
+@keyframes voice-in {
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.hero-copy { display: grid; gap: 1.25rem 3rem; margin-top: 1.6rem; align-items: start; }
+
+@media (min-width: 880px) {
   .hero-copy { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
 }
 
@@ -175,24 +249,29 @@ a { color: inherit; }
   line-height: 1.4;
   max-width: 26ch;
   margin: 0;
-  color: var(--paper);
+  color: var(--fg);
 }
 
-.hero .sub {
-  max-width: 46ch;
-  margin: 0;
-  color: var(--muted);
-}
+.hero .sub { max-width: 46ch; margin: 0; color: var(--fg4); }
+
+/* Entrance for everything that isn't the wordmark. */
+.rise { opacity: 0; transform: translateY(18px); animation: rise .9s var(--ease) forwards; }
+.d1 { animation-delay: .05s; } .d2 { animation-delay: 1.05s; }
+.d3 { animation-delay: 1.2s; } .d4 { animation-delay: 1.4s; }
+
+@keyframes rise { to { opacity: 1; transform: translateY(0); } }
 
 /* ── The score ────────────────────────────────────────────────── */
 
 .score {
+  position: relative;
   margin-top: clamp(2rem, 4vw, 2.75rem);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: linear-gradient(180deg, var(--ink-panel), var(--ink));
+  border: 1px solid var(--bg1);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--bg-hard), rgba(29, 32, 33, .55));
   padding: clamp(1rem, 3vw, 1.75rem);
   overflow: hidden;
+  box-shadow: 0 24px 70px -30px rgba(0, 0, 0, .9);
 }
 
 .score-head {
@@ -201,58 +280,79 @@ a { color: inherit; }
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 1rem;
-  margin-bottom: .35rem;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--bg1);
 }
 
-.score-head .where {
-  font-family: var(--font-mono);
-  font-size: .7rem;
-  color: var(--muted);
-  letter-spacing: .08em;
+.score-head .where { font-family: var(--font-mono); font-size: .7rem; color: var(--gray); letter-spacing: .08em; }
+
+/* The conductor's baton, sweeping the score. */
+.playhead {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  left: 0;
+  background: linear-gradient(180deg, transparent, var(--yellow) 18%, var(--yellow) 82%, transparent);
+  opacity: .5;
+  filter: drop-shadow(0 0 8px rgba(250, 189, 47, .7));
+  animation: sweep 9s linear infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+
+@keyframes sweep {
+  0%   { transform: translateX(0); opacity: 0; }
+  6%   { opacity: .55; }
+  94%  { opacity: .55; }
+  100% { transform: translateX(calc(var(--score-w, 70rem) * 1px)); opacity: 0; }
 }
 
 .lane {
   display: grid;
-  grid-template-columns: 8.5rem 1fr 9.5rem;
+  grid-template-columns: 9rem 1fr 9.5rem;
   align-items: center;
   gap: clamp(.6rem, 2vw, 1.25rem);
-  padding-block: .7rem;
-  border-bottom: 1px solid var(--line-soft);
+  padding-block: .8rem;
+  border-bottom: 1px solid rgba(60, 56, 54, .55);
+  opacity: 0;
+  animation: lane-in .7s var(--ease) forwards;
 }
+
+.lane:nth-of-type(1) { animation-delay: 1.5s; }
+.lane:nth-of-type(2) { animation-delay: 1.65s; }
+.lane:nth-of-type(3) { animation-delay: 1.8s; }
+.lane:nth-of-type(4) { animation-delay: 1.95s; }
+
+@keyframes lane-in { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
 
 .lane:last-of-type { border-bottom: 0; }
 
 .lane .voice {
   font-family: var(--font-mono);
   font-size: .82rem;
-  color: var(--paper);
+  color: var(--fg);
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: .55rem;
   min-width: 0;
+  margin: 0;
 }
 
 .lane .voice::before {
   content: "";
-  width: 3px;
-  height: 1.05rem;
+  width: 3px; height: 1.1rem;
   border-radius: 2px;
-  background: var(--tone, var(--muted));
+  background: var(--tone, var(--gray));
   flex: none;
+  box-shadow: 0 0 10px -1px var(--tone, transparent);
 }
 
-.lane .voice span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.lane .voice span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .track {
   position: relative;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--ink-raised);
+  height: 7px;
+  border-radius: 4px;
+  background: var(--bg1);
   overflow: hidden;
 }
 
@@ -260,9 +360,10 @@ a { color: inherit; }
   position: absolute;
   inset: 0;
   transform-origin: left center;
-  border-radius: 3px;
-  background: var(--tone, var(--muted));
-  opacity: .85;
+  border-radius: 4px;
+  /* Flat fill first: browsers without color-mix() drop the gradient, not the bar. */
+  background: var(--tone, var(--gray));
+  background: linear-gradient(90deg, var(--tone, var(--gray)), color-mix(in srgb, var(--tone, var(--gray)) 65%, var(--fg0)));
   transform: scaleX(var(--rest, .3));
 }
 
@@ -271,43 +372,34 @@ a { color: inherit; }
   font-size: .68rem;
   letter-spacing: .13em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--gray);
   display: flex;
   align-items: center;
   gap: .45rem;
   justify-content: flex-end;
-  text-align: right;
+  margin: 0;
 }
 
-.state::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex: none;
-}
+.state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 
-/* The one lane that wants you. Everything else stays quiet. */
-.lane.waiting { --tone: var(--amber); }
-.lane.waiting .voice { color: var(--amber); }
-.lane.waiting .state { color: var(--amber); }
-.lane.waiting .track i { opacity: 1; transform: scaleX(1); }
-.lane.waiting .state::before { box-shadow: 0 0 0 0 rgba(250, 189, 47, .55); }
+.lane.waiting { --tone: var(--yellow); }
+.lane.waiting .voice,
+.lane.waiting .state { color: var(--yellow); }
+.lane.waiting .track i { transform: scaleX(1); }
 
-.lane.ready { --tone: var(--emerald); }
-.lane.ready .state { color: var(--emerald); }
+.lane.ready { --tone: var(--green); }
+.lane.ready .state { color: var(--green); }
 
 .score-foot {
   display: flex;
   align-items: center;
   gap: .6rem;
-  margin-top: 1.1rem;
+  margin: 1.1rem 0 0;
   padding-top: 1rem;
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid var(--bg1);
   font-family: var(--font-mono);
   font-size: .72rem;
-  color: var(--muted);
+  color: var(--gray);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -315,50 +407,48 @@ a { color: inherit; }
   .lane.waiting .state::before { animation: ping 2.2s ease-out infinite; }
 
   @keyframes advance {
-    0%   { transform: scaleX(.04); opacity: .9; }
-    92%  { transform: scaleX(1);   opacity: .9; }
-    100% { transform: scaleX(1);   opacity: .35; }
+    0%   { transform: scaleX(.04); }
+    92%  { transform: scaleX(1); }
+    100% { transform: scaleX(1); opacity: .4; }
   }
   @keyframes ping {
-    0%   { box-shadow: 0 0 0 0 rgba(250, 189, 47, .5); }
-    70%  { box-shadow: 0 0 0 7px rgba(250, 189, 47, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(250, 189, 47, .55); }
+    70%  { box-shadow: 0 0 0 8px rgba(250, 189, 47, 0); }
     100% { box-shadow: 0 0 0 0 rgba(250, 189, 47, 0); }
   }
 }
 
 /* ── Buttons ──────────────────────────────────────────────────── */
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .75rem;
-  margin-top: 2rem;
-}
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
 
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: .5rem;
   font-family: var(--font-mono);
   font-size: .82rem;
-  padding: .7rem 1.15rem;
-  border-radius: 8px;
+  padding: .75rem 1.25rem;
+  border-radius: 9px;
   text-decoration: none;
-  border: 1px solid var(--line);
-  color: var(--paper);
-  transition: border-color .18s, background .18s, transform .18s;
+  border: 1px solid var(--bg2);
+  color: var(--fg);
+  overflow: hidden;
+  transition: transform .3s var(--ease), border-color .3s, color .3s, box-shadow .3s;
 }
 
-.btn:hover { transform: translateY(-1px); }
+.btn:hover { transform: translateY(-2px); }
 
 .btn.primary {
-  background: var(--violet-deep);
-  border-color: var(--violet-deep);
-  color: #fff;
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--bg-hard);
+  font-weight: 600;
 }
 
-.btn.primary:hover { background: var(--violet); border-color: var(--violet); }
-.btn.ghost:hover { border-color: var(--violet); background: rgba(167, 139, 250, .08); }
+.btn.primary:hover { box-shadow: 0 10px 30px -10px rgba(254, 128, 25, .75); }
+.btn.ghost:hover { border-color: var(--yellow); color: var(--yellow); }
 
 /* ── Sections ─────────────────────────────────────────────────── */
 
@@ -372,43 +462,48 @@ a { color: inherit; }
   letter-spacing: -.015em;
   margin: 1rem 0 0;
   max-width: 20ch;
+  color: var(--fg0);
 }
 
-.section .body {
-  max-width: 58ch;
-  margin-top: 1.25rem;
-  color: var(--muted);
-}
+.section .body { max-width: 58ch; margin-top: 1.25rem; color: var(--fg4); }
+.section .body strong { color: var(--yellow); font-weight: 600; }
 
-.section .body strong { color: var(--paper); font-weight: 600; }
+/* Scroll-triggered reveal. */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal.s1 { transition-delay: .08s; }
+.reveal.s2 { transition-delay: .16s; }
+.reveal.s3 { transition-delay: .24s; }
 
-/* ── States ───────────────────────────────────────────────────── */
+/* ── Status states ────────────────────────────────────────────── */
 
 .states {
   list-style: none;
   padding: 0;
   margin: 2.5rem 0 0;
   display: grid;
-  /* Exactly three columns: six states fill two rows with no orphan cells. */
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
-  background: var(--line-soft);
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
+  background: var(--bg1);
+  border: 1px solid var(--bg1);
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .states li {
-  background: var(--ink-panel);
-  padding: 1.1rem 1.25rem;
+  background: var(--bg-hard);
+  padding: 1.2rem 1.3rem;
+  transition: background .35s;
 }
+
+.states li:hover { background: #232626; }
 
 .states dfn {
   font-family: var(--font-mono);
   font-size: .72rem;
   letter-spacing: .13em;
   font-style: normal;
-  color: var(--tone, var(--muted));
+  color: var(--tone, var(--fg4));
   display: flex;
   align-items: center;
   gap: .5rem;
@@ -419,87 +514,203 @@ a { color: inherit; }
   width: 6px; height: 6px;
   border-radius: 50%;
   background: currentColor;
+  box-shadow: 0 0 10px currentColor;
 }
 
-.states p { margin: .5rem 0 0; font-size: .92rem; color: var(--muted); }
+.states p { margin: .5rem 0 0; font-size: .92rem; color: var(--fg4); }
+
+/* ── Split tree ───────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  margin-top: 2.5rem;
+  aspect-ratio: 16 / 8;
+  border: 1px solid var(--bg1);
+  border-radius: 12px;
+  background: var(--bg-hard);
+  overflow: hidden;
+  box-shadow: 0 24px 70px -34px rgba(0, 0, 0, .9);
+}
+
+.pane {
+  position: absolute;
+  border: 1px solid var(--bg2);
+  border-radius: 7px;
+  background: var(--bg);
+  padding: .55rem .7rem;
+  font-family: var(--font-mono);
+  font-size: .64rem;
+  color: var(--fg4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.pane b {
+  font-weight: 500;
+  color: var(--tone, var(--fg2));
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  letter-spacing: .06em;
+}
+
+.pane b::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.pane em { font-style: normal; opacity: .6; font-size: .6rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .pane { animation: var(--seq) 14s var(--ease) infinite; }
+  .pane.a { --seq: pane-a; }
+  .pane.b { --seq: pane-b; }
+  .pane.c { --seq: pane-c; }
+  .pane.d { --seq: pane-d; }
+}
+
+/* One pane becomes a layout. Percentages match a real split tree. */
+@keyframes pane-a {
+  0%, 12%   { left: 3%; top: 5%; width: 94%; height: 90%; opacity: 1; }
+  22%, 100% { left: 3%; top: 5%; width: 45.5%; height: 90%; opacity: 1; }
+}
+@keyframes pane-b {
+  0%, 12%   { left: 51%; top: 5%; width: 45.5%; height: 90%; opacity: 0; }
+  22%, 37%  { left: 51%; top: 5%; width: 45.5%; height: 90%; opacity: 1; }
+  47%, 100% { left: 51%; top: 5%; width: 45.5%; height: 42%; opacity: 1; }
+}
+@keyframes pane-c {
+  0%, 37%   { left: 51%; top: 53%; width: 45.5%; height: 42%; opacity: 0; }
+  47%, 62%  { left: 51%; top: 53%; width: 45.5%; height: 42%; opacity: 1; }
+  72%, 100% { left: 51%; top: 53%; width: 21.5%; height: 42%; opacity: 1; }
+}
+@keyframes pane-d {
+  0%, 62%   { left: 75%; top: 53%; width: 21.5%; height: 42%; opacity: 0; }
+  72%, 100% { left: 75%; top: 53%; width: 21.5%; height: 42%; opacity: 1; }
+}
+
+.stage-caption {
+  margin: 1rem 0 0;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--gray);
+}
 
 /* ── Capabilities ─────────────────────────────────────────────── */
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-  gap: 1.75rem 2.5rem;
-  margin-top: 2.5rem;
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1px; margin-top: 2.5rem; background: var(--bg1); border: 1px solid var(--bg1); border-radius: 12px; overflow: hidden; }
+
+.cell {
+  background: var(--bg-hard);
+  padding: 1.5rem 1.4rem;
+  position: relative;
+  transition: background .35s;
 }
 
-.grid h3 {
+.cell::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--orange);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform .45s var(--ease);
+}
+
+.cell:hover { background: #232626; }
+.cell:hover::before { transform: scaleY(1); }
+
+.cell h3 {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 600;
-  margin: 0 0 .4rem;
+  margin: 0 0 .45rem;
+  color: var(--fg0);
   display: flex;
   align-items: baseline;
   gap: .6rem;
+  flex-wrap: wrap;
 }
 
-.grid kbd {
+.cell kbd {
   font-family: var(--font-mono);
   font-size: .72rem;
-  color: var(--violet);
-  border: 1px solid var(--line);
+  color: var(--yellow);
+  border: 1px solid var(--bg2);
   border-radius: 5px;
-  padding: .1rem .4rem;
-  background: var(--ink-panel);
+  padding: .1rem .45rem;
+  background: var(--bg);
   white-space: nowrap;
+  transition: border-color .3s, box-shadow .3s;
 }
 
-.grid p { margin: 0; color: var(--muted); font-size: .94rem; }
+.cell:hover kbd { border-color: var(--yellow); box-shadow: 0 0 14px -4px var(--yellow); }
+.cell p { margin: 0; color: var(--fg4); font-size: .94rem; }
+.cell code { font-family: var(--font-mono); font-size: .85em; color: var(--aqua); }
 
-/* ── Install ──────────────────────────────────────────────────── */
+/* ── Install terminal ─────────────────────────────────────────── */
 
 .terminal {
   margin-top: 2rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--ink-panel);
+  border: 1px solid var(--bg1);
+  border-radius: 12px;
+  background: var(--bg-hard);
   overflow: hidden;
+  box-shadow: 0 24px 70px -34px rgba(0, 0, 0, .9);
 }
 
 .terminal header {
-  padding: .6rem 1rem;
-  border-bottom: 1px solid var(--line-soft);
+  padding: .65rem 1rem;
+  border-bottom: 1px solid var(--bg1);
   font-family: var(--font-mono);
-  font-size: .7rem;
-  letter-spacing: .1em;
-  color: var(--muted);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  color: var(--gray);
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 }
+
+.dots { display: flex; gap: .3rem; margin-right: .5rem; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+.dots i:nth-child(1) { background: var(--red); }
+.dots i:nth-child(2) { background: var(--yellow); }
+.dots i:nth-child(3) { background: var(--green); }
 
 .terminal pre {
   margin: 0;
-  padding: 1.25rem;
+  padding: 1.35rem;
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: .82rem;
-  line-height: 1.85;
-  color: var(--paper);
+  line-height: 1.9;
+  color: var(--fg);
+  min-height: 17rem;
 }
 
-.terminal .c { color: var(--muted); }
-.terminal .p { color: var(--emerald); user-select: none; }
+.terminal .c { color: var(--gray); }
+.terminal .p { color: var(--green); user-select: none; }
 
-.note {
-  margin-top: 1.5rem;
-  max-width: 58ch;
-  font-size: .9rem;
-  color: var(--muted);
+.caret {
+  display: inline-block;
+  width: .55em;
+  height: 1.05em;
+  background: var(--fg);
+  vertical-align: text-bottom;
+  animation: blink 1.05s steps(2) infinite;
 }
 
-.note code {
-  font-family: var(--font-mono);
-  font-size: .85em;
-  color: var(--paper);
-}
+@keyframes blink { 50% { opacity: 0; } }
+
+.note { margin-top: 1.5rem; max-width: 58ch; font-size: .9rem; color: var(--fg4); }
+.note strong { color: var(--fg); }
 
 /* ── Footer ───────────────────────────────────────────────────── */
 
@@ -512,60 +723,83 @@ a { color: inherit; }
   justify-content: space-between;
   font-family: var(--font-mono);
   font-size: .75rem;
-  color: var(--muted);
+  color: var(--gray);
 }
 
-.foot a { color: var(--muted); text-decoration: none; }
-.foot a:hover { color: var(--paper); }
+.foot a { color: var(--gray); text-decoration: none; transition: color .25s; }
+.foot a:hover { color: var(--orange); }
 .foot .links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.foot p { margin: 0; }
 
-@media (max-width: 900px) {
-  .states { grid-template-columns: repeat(2, 1fr); }
-}
+@media (max-width: 900px) { .states { grid-template-columns: repeat(2, 1fr); } }
 
 @media (max-width: 640px) {
   .lane { grid-template-columns: 1fr auto; row-gap: .5rem; }
   .lane .track { grid-column: 1 / -1; order: 3; }
   .state { justify-content: flex-start; }
   .states { grid-template-columns: 1fr; }
+  .stage { aspect-ratio: 4 / 5; }
+}
+
+/* ── Motion off ───────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .ambient, .grain, .playhead, .caret { animation: none; }
+  .grain { display: none; }
+  .playhead { display: none; }
+  .hero h1 span, .rise, .lane { opacity: 1; transform: none; animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  /* Panes settle into the finished four-pane layout. */
+  .pane { animation: none; opacity: 1; }
+  .pane.a { left: 3%;  top: 5%;  width: 45.5%; height: 90%; }
+  .pane.b { left: 51%; top: 5%;  width: 45.5%; height: 42%; }
+  .pane.c { left: 51%; top: 53%; width: 21.5%; height: 42%; }
+  .pane.d { left: 75%; top: 53%; width: 21.5%; height: 42%; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
-  <header class="masthead">
-    <a class="mark" href="/">
+<div class="ambient"></div>
+<div class="grain"></div>
+
+<header class="masthead" id="masthead">
+  <div class="wrap masthead-inner">
+    <a class="mark" href="#top">
       <img src="assets/icon.svg" alt="">
       Soprano
     </a>
     <nav>
       <a href="#how">How it works</a>
+      <a href="#layout">Layout</a>
       <a href="#install">Install</a>
       <a href="https://github.com/frknue/soprano">GitHub</a>
     </nav>
-  </header>
-</div>
+  </div>
+</header>
 
-<main>
+<main id="top">
   <div class="wrap">
     <section class="hero">
-      <p class="eyebrow">Native macOS · Swift 6 + libghostty · MIT</p>
-      <h1>Soprano</h1>
+      <p class="eyebrow rise d1">Native macOS · Swift 6 + libghostty · Gruvbox by default</p>
+
+      <h1 aria-label="Soprano"><span style="--i:1" aria-hidden="true">S</span><span style="--i:2" aria-hidden="true">o</span><span style="--i:3" aria-hidden="true">p</span><span style="--i:4" aria-hidden="true">r</span><span style="--i:5" aria-hidden="true">a</span><span style="--i:6" aria-hidden="true">n</span><span style="--i:7" aria-hidden="true">o</span></h1>
 
       <div class="hero-copy">
-        <p class="lede">A tiling terminal multiplexer for the room full of coding agents you're already running.</p>
-
-        <p class="sub">
+        <p class="lede rise d2">A tiling terminal multiplexer for the room full of coding agents you're already running.</p>
+        <p class="sub rise d3">
           Codex, Claude Code, and OpenCode side by side in real GPU-rendered terminals.
           Every pane says what its agent is doing, and macOS tells you which one is
           waiting on you.
         </p>
       </div>
 
-      <!-- The score: four voices, one conductor. -->
-      <div class="score">
+      <!-- The score: four voices, one conductor, one baton. -->
+      <div class="score rise d3" id="score">
+        <div class="playhead"></div>
+
         <div class="score-head">
           <p class="eyebrow">Live pane status</p>
           <p class="where">soprano ▸ window 1</p>
@@ -595,12 +829,10 @@ a { color: inherit; }
           <p class="state">Ready</p>
         </div>
 
-        <p class="score-foot">
-          Driven by real agent lifecycle hooks — not output scraping.
-        </p>
+        <p class="score-foot">Driven by real agent lifecycle hooks — not output scraping.</p>
       </div>
 
-      <div class="actions">
+      <div class="actions rise d4">
         <a class="btn primary" href="#install">Install Soprano</a>
         <a class="btn ghost" href="https://github.com/frknue/soprano">Read the source</a>
       </div>
@@ -611,9 +843,9 @@ a { color: inherit; }
 
   <div class="wrap">
     <section class="section" id="how">
-      <p class="eyebrow">The problem</p>
-      <h2>One agent is easy. Four is a scheduling problem.</h2>
-      <div class="body">
+      <p class="eyebrow reveal">The problem</p>
+      <h2 class="reveal s1">One agent is easy. Four is a scheduling problem.</h2>
+      <div class="body reveal s2">
         <p>
           They run asynchronously, they all stop to ask you something eventually, and
           terminal tabs hide the one that is blocked. So you cycle through tabs looking
@@ -625,31 +857,13 @@ a { color: inherit; }
         </p>
       </div>
 
-      <ul class="states">
-        <li>
-          <dfn>Starting</dfn>
-          <p>The launcher is up, the agent has not reported in yet.</p>
-        </li>
-        <li style="--tone: var(--codex)">
-          <dfn>Working</dfn>
-          <p>A turn is in flight. Leave it alone.</p>
-        </li>
-        <li style="--tone: var(--emerald)">
-          <dfn>Ready</dfn>
-          <p>Idle and waiting for a prompt.</p>
-        </li>
-        <li style="--tone: var(--amber)">
-          <dfn>Needs input</dfn>
-          <p>A question or a permission prompt. This is the one you came for.</p>
-        </li>
-        <li style="--tone: var(--claude)">
-          <dfn>Error</dfn>
-          <p>The turn failed. The pane keeps the state until you look.</p>
-        </li>
-        <li>
-          <dfn>Stopped</dfn>
-          <p>The process exited. The layout stays where you left it.</p>
-        </li>
+      <ul class="states reveal s3">
+        <li><dfn>Starting</dfn><p>The launcher is up, the agent has not reported in yet.</p></li>
+        <li style="--tone: var(--aqua)"><dfn>Working</dfn><p>A turn is in flight. Leave it alone.</p></li>
+        <li style="--tone: var(--green)"><dfn>Ready</dfn><p>Idle and waiting for a prompt.</p></li>
+        <li style="--tone: var(--yellow)"><dfn>Needs input</dfn><p>A question or a permission prompt. This is the one you came for.</p></li>
+        <li style="--tone: var(--red)"><dfn>Error</dfn><p>The turn failed. The pane keeps the state until you look.</p></li>
+        <li style="--tone: var(--gray)"><dfn>Stopped</dfn><p>The process exited. The layout stays where you left it.</p></li>
       </ul>
     </section>
   </div>
@@ -657,32 +871,57 @@ a { color: inherit; }
   <div class="wrap"><hr class="staff"></div>
 
   <div class="wrap">
-    <section class="section">
-      <p class="eyebrow">What you get</p>
-      <h2>A real terminal, arranged the way you think.</h2>
+    <section class="section" id="layout">
+      <p class="eyebrow reveal">The layout</p>
+      <h2 class="reveal s1">Every pane is a node. Every split is a decision.</h2>
+      <div class="body reveal s2">
+        <p>
+          Panes live in a recursive split tree, so a window is never a fixed grid you
+          have to fight. Split with <strong>⌃A |</strong> and <strong>⌃A -</strong>,
+          resize on the same prefix, and move between panes with ⌃H/J/K/L — no prefix
+          at all.
+        </p>
+      </div>
 
-      <div class="grid">
-        <div>
+      <div class="stage reveal s3" aria-hidden="true">
+        <div class="pane a" style="--tone: var(--codex)"><b>Codex</b><em>editing SplitNode.swift</em></div>
+        <div class="pane b" style="--tone: var(--claude)"><b>Claude Code</b><em>needs input</em></div>
+        <div class="pane c" style="--tone: var(--opencode)"><b>OpenCode</b><em>working</em></div>
+        <div class="pane d" style="--tone: var(--green)"><b>Terminal 1</b><em>swift test</em></div>
+      </div>
+      <p class="stage-caption reveal">One pane becomes a layout — and every layout comes back on the next launch.</p>
+    </section>
+  </div>
+
+  <div class="wrap"><hr class="staff"></div>
+
+  <div class="wrap">
+    <section class="section">
+      <p class="eyebrow reveal">What you get</p>
+      <h2 class="reveal s1">A real terminal, arranged the way you think.</h2>
+
+      <div class="grid reveal s2">
+        <div class="cell">
           <h3>Notifications that name the place</h3>
           <p>Subtitled <em>window ▸ pane</em>. Clicking one activates Soprano and focuses that exact tab — no hunting.</p>
         </div>
-        <div>
+        <div class="cell">
           <h3>libghostty surfaces</h3>
           <p>Every pane is a real GPU-rendered terminal hosted in AppKit. No Electron, no web view, no reimplemented VT parser.</p>
         </div>
-        <div>
-          <h3>Splits on a prefix <kbd>⌃A</kbd></h3>
-          <p>tmux-style chords for splitting and resizing, plus <kbd>⌃H/J/K/L</kbd> to move between panes with no prefix at all.</p>
-        </div>
-        <div>
+        <div class="cell">
           <h3>Depth <kbd>⌃A I</kbd></h3>
           <p>Any pane opens a private workspace on the window's z-axis, so one pane becomes a whole layout while its siblings keep running.</p>
         </div>
-        <div>
+        <div class="cell">
           <h3>A browser your agents drive <kbd>⌘B</kbd></h3>
           <p>A WebKit pane splits off to the right. From inside any terminal, <code>"$SOPRANO_BIN" browser click @e1</code> works.</p>
         </div>
-        <div>
+        <div class="cell">
+          <h3>Copy mode <kbd>⌃A [</kbd></h3>
+          <p>Vim motions over the scrollback — viewport and buffer jumps, character and line selection, clipboard yank.</p>
+        </div>
+        <div class="cell">
           <h3>Layouts that come back</h3>
           <p>The last workspace restores on launch, and <kbd>⇧⌘S</kbd> saves named sessions you can return to.</p>
         </div>
@@ -694,34 +933,22 @@ a { color: inherit; }
 
   <div class="wrap">
     <section class="section" id="install">
-      <p class="eyebrow">Install</p>
-      <h2>Build it from source.</h2>
+      <p class="eyebrow reveal">Install</p>
+      <h2 class="reveal s1">Build it from source.</h2>
 
-      <div class="body">
+      <div class="body reveal s2">
         <p>
           Soprano links libghostty statically, so the first build compiles it once.
           After that you only repeat it when the ghostty submodule moves.
         </p>
       </div>
 
-      <div class="terminal">
-        <header>Fresh clone to installed app</header>
-<pre><span class="c"># 1 · Toolchain. Homebrew Swift is required — the system CLT Swift has broken SPM.</span>
-<span class="p">$</span> brew install swift zig
-<span class="p">$</span> xcodebuild -downloadComponent MetalToolchain
-
-<span class="c"># 2 · Clone with the ghostty submodule</span>
-<span class="p">$</span> git clone --recurse-submodules https://github.com/frknue/soprano.git
-<span class="p">$</span> cd soprano
-
-<span class="c"># 3 · Build libghostty once (a few minutes)</span>
-<span class="p">$</span> ./scripts/build-ghostty.sh
-
-<span class="c"># 4 · Build the release app into /Applications</span>
-<span class="p">$</span> ./install.sh</pre>
+      <div class="terminal reveal s3">
+        <header><span class="dots"><i></i><i></i><i></i></span>Fresh clone to installed app</header>
+        <pre id="typed" aria-label="Installation commands"></pre>
       </div>
 
-      <p class="note">
+      <p class="note reveal">
         <strong>Requirements:</strong> macOS 14 Sonoma or newer · full Xcode with the
         Metal Toolchain (Command Line Tools alone cannot build libghostty) ·
         Homebrew Swift 6.2+ · Zig 0.15.2+.
@@ -742,6 +969,141 @@ a { color: inherit; }
     </div>
   </footer>
 </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Playhead sweep needs the score's pixel width. */
+  var score = document.getElementById("score");
+  function sizePlayhead() {
+    if (!score) return;
+    score.style.setProperty("--score-w", score.clientWidth);
+  }
+  sizePlayhead();
+  window.addEventListener("resize", sizePlayhead);
+
+  /* Masthead gets a rule once the page has moved. */
+  var masthead = document.getElementById("masthead");
+  function onScroll() {
+    if (masthead) masthead.classList.toggle("stuck", window.scrollY > 8);
+  }
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  /* Scroll-triggered reveals. */
+  var targets = document.querySelectorAll(".reveal");
+  if (reduced || !("IntersectionObserver" in window)) {
+    targets.forEach(function (el) { el.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: .1 });
+    targets.forEach(function (el) { io.observe(el); });
+  }
+
+  /* The install block types itself out the first time it is seen. */
+  var LINES = [
+    { t: "# 1 · Toolchain. Homebrew Swift is required — the system CLT Swift has broken SPM.", cls: "c" },
+    { t: "brew install swift zig", prompt: true },
+    { t: "xcodebuild -downloadComponent MetalToolchain", prompt: true },
+    { t: "", cls: "c" },
+    { t: "# 2 · Clone with the ghostty submodule", cls: "c" },
+    { t: "git clone --recurse-submodules https://github.com/frknue/soprano.git", prompt: true },
+    { t: "cd soprano", prompt: true },
+    { t: "", cls: "c" },
+    { t: "# 3 · Build libghostty once (a few minutes)", cls: "c" },
+    { t: "./scripts/build-ghostty.sh", prompt: true },
+    { t: "", cls: "c" },
+    { t: "# 4 · Build the release app into /Applications", cls: "c" },
+    { t: "./install.sh", prompt: true }
+  ];
+
+  var out = document.getElementById("typed");
+  if (!out) return;
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function renderStatic() {
+    out.innerHTML = LINES.map(function (l) {
+      if (!l.t) return "";
+      if (l.prompt) return '<span class="p">$</span> ' + escapeHtml(l.t);
+      return '<span class="' + (l.cls || "") + '">' + escapeHtml(l.t) + "</span>";
+    }).join("\n");
+  }
+
+  if (reduced) {
+    renderStatic();
+    return;
+  }
+
+  var typing = false;
+
+  function type() {
+    if (typing) return;
+    typing = true;
+
+    var html = "";
+    var line = 0;
+    var char = 0;
+
+    function step() {
+      if (line >= LINES.length) {
+        out.innerHTML = html + '<span class="caret"></span>';
+        return;
+      }
+
+      var current = LINES[line];
+
+      if (!current.t) {
+        html += "\n";
+        line++; char = 0;
+        return setTimeout(step, 90);
+      }
+
+      if (char === 0 && current.prompt) html += '<span class="p">$</span> ';
+
+      char++;
+      var shown = escapeHtml(current.t.slice(0, char));
+      var done = char >= current.t.length;
+
+      var body = current.prompt ? shown : '<span class="' + (current.cls || "") + '">' + shown + "</span>";
+      out.innerHTML = html + body + '<span class="caret"></span>';
+
+      if (done) {
+        html += body + "\n";
+        line++; char = 0;
+        return setTimeout(step, current.prompt ? 260 : 120);
+      }
+
+      setTimeout(step, current.cls === "c" ? 8 : 26);
+    }
+
+    step();
+  }
+
+  if ("IntersectionObserver" in window) {
+    var typeObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        type();
+        typeObserver.disconnect();
+      });
+    }, { threshold: .25 });
+    typeObserver.observe(out);
+  } else {
+    renderStatic();
+  }
+})();
+</script>
 
 </body>
 </html>
