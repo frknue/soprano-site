@@ -536,6 +536,96 @@ kbd {
   .keymap td:first-child { width: auto; }
 }
 
+/* ── Pointer spotlight ────────────────────────────────────────── */
+
+.spotlight {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(22rem 22rem at var(--mx, 50%) var(--my, 30%), var(--wash1), transparent 70%);
+  opacity: 0; transition: opacity .8s var(--ease);
+}
+
+.spotlight.live { opacity: .55; }
+
+/* ── Scroll progress, styled as the playhead ──────────────────── */
+
+.progress {
+  position: absolute; left: 0; bottom: -1px; height: 2px;
+  width: 100%; transform: scaleX(var(--p, 0)); transform-origin: left;
+  background: linear-gradient(90deg, var(--accent), var(--yellow));
+  box-shadow: 0 0 10px var(--glow);
+}
+
+/* ── Cell spotlight ───────────────────────────────────────────── */
+
+.cell::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(14rem 14rem at var(--cx, 50%) var(--cy, 50%), var(--wash1), transparent 70%);
+  opacity: 0; transition: opacity .4s var(--ease);
+}
+
+.cell:hover::after { opacity: 1; }
+
+/* ── Command palette ──────────────────────────────────────────── */
+
+.palette-hint {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-family: var(--font-mono); font-size: .72rem; color: var(--muted);
+  border: 1px solid var(--b2); border-radius: 7px; padding: .25rem .55rem;
+  background: var(--panel); cursor: pointer;
+  transition: border-color .3s, color .3s;
+}
+
+.palette-hint:hover { border-color: var(--accent); color: var(--fg0); }
+
+.palette-scrim {
+  position: fixed; inset: 0; z-index: 50;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: clamp(3rem, 14vh, 9rem) 1.25rem 1.25rem;
+  opacity: 0; visibility: hidden; transition: opacity .25s var(--ease), visibility .25s;
+}
+
+.palette-scrim.open { opacity: 1; visibility: visible; }
+
+.palette {
+  width: min(34rem, 100%);
+  border: 1px solid var(--b2); border-radius: 13px;
+  background: var(--panel); overflow: hidden;
+  box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .95);
+  transform: translateY(-12px) scale(.98); transition: transform .28s var(--ease);
+}
+
+.palette-scrim.open .palette { transform: none; }
+
+.palette input {
+  width: 100%; border: 0; outline: 0; background: transparent;
+  padding: 1rem 1.15rem; color: var(--fg0);
+  font-family: var(--font-mono); font-size: .92rem;
+  border-bottom: 1px solid var(--b1);
+}
+
+.palette input::placeholder { color: var(--muted); }
+
+.palette ul { list-style: none; margin: 0; padding: .4rem; max-height: 19rem; overflow-y: auto; }
+
+.palette li {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .6rem .75rem; border-radius: 8px; cursor: pointer;
+  font-family: var(--font-mono); font-size: .82rem; color: var(--fg);
+}
+
+.palette li[aria-selected="true"] { background: var(--b1); color: var(--fg0); }
+.palette li .tag { margin-left: auto; font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.palette li .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+.palette .empty { padding: 1.1rem .75rem; color: var(--muted); font-family: var(--font-mono); font-size: .8rem; }
+
+.palette footer {
+  display: flex; gap: 1rem; padding: .6rem 1.15rem;
+  border-top: 1px solid var(--b1); font-family: var(--font-mono);
+  font-size: .64rem; color: var(--muted); letter-spacing: .08em;
+}
+
 /* ── Motion off ───────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -545,6 +635,8 @@ kbd {
   .hero h1 span, .rise, .lane { opacity: 1; transform: none; animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .banner { transform: none; opacity: 1; animation: none; }
+  .spotlight { display: none; }
+  .palette { transform: none; }
   .pane { animation: none; opacity: 1; }
   .pane.a { left: 3%;  top: 5%;  width: 45.5%; height: 90%; }
   .pane.b { left: 51%; top: 5%;  width: 45.5%; height: 42%; }
@@ -557,6 +649,7 @@ kbd {
 <body>
 
 <div class="ambient"></div>
+<div class="spotlight" id="spotlight"></div>
 <div class="grain"></div>
 
 <header class="masthead" id="masthead">
@@ -567,14 +660,25 @@ kbd {
     </a>
     <nav>
       <a href="#how">Status</a>
-      <a href="#layout">Layout</a>
+      <a class="opt" href="#layout">Layout</a>
       <a class="opt" href="#features">Features</a>
       <a class="opt" href="#themes">Themes</a>
       <a href="#install">Install</a>
       <a href="https://github.com/frknue/soprano">GitHub</a>
+      <button class="palette-hint" id="palette-open" type="button" aria-haspopup="dialog">⌘P</button>
     </nav>
   </div>
+  <div class="progress" id="progress"></div>
 </header>
+
+<!-- Soprano has a command palette; so does its website. -->
+<div class="palette-scrim" id="palette-scrim" role="dialog" aria-modal="true" aria-label="Command palette" hidden>
+  <div class="palette">
+    <input id="palette-input" type="text" placeholder="Jump to…" autocomplete="off" spellcheck="false" aria-controls="palette-list">
+    <ul id="palette-list" role="listbox" aria-label="Results"></ul>
+    <footer><span>↑↓ navigate</span><span>↵ open</span><span>esc close</span></footer>
+  </div>
+</div>
 
 <main id="top">
   <div class="wrap">
@@ -963,6 +1067,258 @@ kbd {
       });
     }, { rootMargin: "0px 0px -12% 0px", threshold: .1 });
     targets.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ── Pointer spotlight + per-cell glow ── */
+  var spot = document.getElementById("spotlight");
+  if (spot && !reduced && window.matchMedia("(hover: hover)").matches) {
+    var mx = 0, my = 0, queued = false;
+    window.addEventListener("pointermove", function (e) {
+      mx = e.clientX; my = e.clientY;
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () {
+        queued = false;
+        spot.classList.add("live");
+        spot.style.setProperty("--mx", mx + "px");
+        spot.style.setProperty("--my", my + "px");
+      });
+    }, { passive: true });
+
+    document.querySelectorAll(".cell").forEach(function (cell) {
+      cell.addEventListener("pointermove", function (e) {
+        var r = cell.getBoundingClientRect();
+        cell.style.setProperty("--cx", (e.clientX - r.left) + "px");
+        cell.style.setProperty("--cy", (e.clientY - r.top) + "px");
+      }, { passive: true });
+    });
+  }
+
+  /* ── Scroll progress, drawn like the playhead ── */
+  var progress = document.getElementById("progress");
+  if (progress) {
+    var ticking = false;
+    var updateProgress = function () {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.setProperty("--p", max > 0 ? Math.min(1, window.scrollY / max) : 0);
+      ticking = false;
+    };
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(updateProgress);
+    }, { passive: true });
+    updateProgress();
+  }
+
+  /* ── Command palette. Soprano has one; so does its site. ── */
+  var ACTIONS = [
+    { label: "Live pane status",       tag: "Section", go: "#how" },
+    { label: "Attention & dashboard",  tag: "Section", go: "#top", scroll: ".notify-stage" },
+    { label: "Layout & depth",         tag: "Section", go: "#layout" },
+    { label: "Features",               tag: "Section", go: "#features" },
+    { label: "Themes",                 tag: "Section", go: "#themes" },
+    { label: "Install",                tag: "Section", go: "#install" },
+    { label: "Source on GitHub",       tag: "Link", href: "https://github.com/frknue/soprano" },
+    { label: "Changelog",              tag: "Link", href: "https://github.com/frknue/soprano/blob/main/CHANGELOG.md" },
+    { label: "Report an issue",        tag: "Link", href: "https://github.com/frknue/soprano/issues" },
+    { label: "ghostty",                tag: "Link", href: "https://github.com/ghostty-org/ghostty" }
+  ];
+
+  var scrim = document.getElementById("palette-scrim");
+  var input = document.getElementById("palette-input");
+  var listEl = document.getElementById("palette-list");
+  var openBtn = document.getElementById("palette-open");
+  var cursor = 0;
+  var shown = ACTIONS.slice();
+
+  /* Subsequence match. Named to avoid colliding with the `score` element above. */
+  function fuzzyMatch(needle, hay) {
+    hay = hay.toLowerCase();
+    if (!needle) return 0;
+    var i = 0;
+    for (var c = 0; c < needle.length; c++) {
+      i = hay.indexOf(needle[c], i);
+      if (i === -1) return -1;
+      i++;
+    }
+    return 1;
+  }
+
+  function draw() {
+    listEl.innerHTML = "";
+    if (!shown.length) {
+      var none = document.createElement("li");
+      none.className = "empty";
+      none.textContent = "No matches";
+      listEl.appendChild(none);
+      return;
+    }
+    shown.forEach(function (a, i) {
+      var li = document.createElement("li");
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", String(i === cursor));
+      li.innerHTML = '<span class="dot"></span>' + a.label + '<span class="tag">' + a.tag + "</span>";
+      li.addEventListener("click", function () { run(a); });
+      listEl.appendChild(li);
+    });
+  }
+
+  function filter() {
+    var q = input.value.trim().toLowerCase();
+    shown = ACTIONS.filter(function (a) { return fuzzyMatch(q, a.label) >= 0; });
+    cursor = 0;
+    draw();
+  }
+
+  function openPalette() {
+    scrim.hidden = false;
+    requestAnimationFrame(function () { scrim.classList.add("open"); });
+    input.value = "";
+    filter();
+    input.focus();
+  }
+
+  function closePalette() {
+    scrim.classList.remove("open");
+    setTimeout(function () { scrim.hidden = true; }, 250);
+  }
+
+  function run(a) {
+    closePalette();
+    if (a.href) { window.open(a.href, "_blank", "noopener"); return; }
+    var target = document.querySelector(a.scroll || a.go);
+    if (target) target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }
+
+  if (scrim && input && listEl) {
+    if (openBtn) openBtn.addEventListener("click", openPalette);
+
+    document.addEventListener("keydown", function (e) {
+      var open = scrim.classList.contains("open");
+      var typingHere = /^(INPUT|TEXTAREA)$/.test((e.target.tagName || "").toUpperCase());
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        return open ? closePalette() : openPalette();
+      }
+      if (!open && e.key === "/" && !typingHere) { e.preventDefault(); return openPalette(); }
+      if (!open) return;
+
+      if (e.key === "Escape") { e.preventDefault(); return closePalette(); }
+      if (e.key === "ArrowDown") { e.preventDefault(); cursor = Math.min(cursor + 1, shown.length - 1); return draw(); }
+      if (e.key === "ArrowUp") { e.preventDefault(); cursor = Math.max(cursor - 1, 0); return draw(); }
+      if (e.key === "Enter" && shown[cursor]) { e.preventDefault(); return run(shown[cursor]); }
+    });
+
+    input.addEventListener("input", filter);
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) closePalette(); });
+  }
+
+  /* ── Dashboard tallies count up when first seen ── */
+  var tallies = document.querySelectorAll(".tally b");
+  if (tallies.length && !reduced && "IntersectionObserver" in window) {
+    var countIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        var target = parseInt(el.textContent, 10) || 0;
+        var n = 0;
+        el.textContent = "0";
+        (function tick() {
+          if (n >= target) { el.textContent = String(target); return; }
+          n++;
+          el.textContent = String(n);
+          setTimeout(tick, 260);
+        })();
+        countIO.unobserve(el);
+      });
+    }, { threshold: .6 });
+    tallies.forEach(function (el) { countIO.observe(el); });
+  }
+
+  /* ── The split-tree panes keep working while you watch ── */
+  var PANE_LOGS = {
+    a: ["editing SplitNode.swift", "3 files changed", "running swift build", "reading AgentManager.swift"],
+    b: ["needs input", "Drop the legacy column? [y/n]", "waiting on you"],
+    c: ["working", "resolving imports", "writing tests", "42 files scanned"],
+    d: ["swift test", "252 tests, 0 failures", "$ git status", "$ ./install.sh"]
+  };
+
+  if (!reduced) {
+    Object.keys(PANE_LOGS).forEach(function (key) {
+      var el = document.querySelector(".pane." + key + " em");
+      if (!el) return;
+      var lines = PANE_LOGS[key];
+      var i = 0;
+      setInterval(function () {
+        i = (i + 1) % lines.length;
+        el.style.opacity = "0";
+        setTimeout(function () {
+          el.textContent = lines[i];
+          el.style.opacity = "";
+        }, 220);
+      }, 2600 + Math.round(key.charCodeAt(0) % 5) * 340);
+      el.style.transition = "opacity .22s linear";
+    });
+  }
+
+  /* ── The score keeps playing: states advance on each sweep ── */
+  var TONES = { codex: "var(--cyan)", claude: "var(--accent)", opencode: "var(--blue)", term: "var(--muted)" };
+  var VOICES = ["codex", "claude", "opencode", "term"];
+  var STEPS = [
+    ["working", "waiting", "working", "ready"],
+    ["ready",   "working", "working", "ready"],
+    ["working", "working", "waiting", "ready"],
+    ["waiting", "ready",   "working", "working"]
+  ];
+
+  var lanes = document.querySelectorAll(".score .lane");
+  var LABEL = { working: "Working", waiting: "Needs input", ready: "Ready" };
+  var stepAt = 0;
+
+  function applyStep() {
+    stepAt = (stepAt + 1) % STEPS.length;
+    var row = STEPS[stepAt];
+    lanes.forEach(function (lane, i) {
+      var state = row[i];
+      lane.classList.remove("working", "waiting", "ready");
+      lane.classList.add(state);
+      lane.style.setProperty("--tone",
+        state === "waiting" ? "var(--yellow)" : state === "ready" ? "var(--green)" : TONES[VOICES[i]]);
+      lane.style.setProperty("--rest", state === "ready" ? "0" : state === "waiting" ? "1" : ".4");
+      lane.style.setProperty("--dur", (7 + i * 2) + "s");
+      var label = lane.querySelector(".state");
+      if (label) label.textContent = LABEL[state];
+    });
+  }
+
+  if (lanes.length && !reduced) setInterval(applyStep, 9000);
+
+  /* ── Eyebrows decode into place, terminal-style ── */
+  var GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>_-=+*#";
+  if (!reduced && "IntersectionObserver" in window) {
+    var decodeIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        var final = el.textContent;
+        var frame = 0;
+        decodeIO.unobserve(el);
+        var id = setInterval(function () {
+          frame++;
+          var settled = Math.floor(frame / 2);
+          if (settled >= final.length) { el.textContent = final; return clearInterval(id); }
+          var noise = "";
+          for (var i = settled; i < final.length; i++) {
+            noise += final[i] === " " ? " " : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+          }
+          el.textContent = final.slice(0, settled) + noise;
+        }, 28);
+      });
+    }, { threshold: .8 });
+
+    document.querySelectorAll(".section .eyebrow").forEach(function (el) { decodeIO.observe(el); });
   }
 
   /* ── The install block types itself out ── */

@@ -55,9 +55,26 @@ right now?* — rather than showing a screenshot in a browser frame.
 - **Split tree.** In the Layout section, one pane becomes four on a 14s loop, following
   the same percentages a real `SplitNode` tree would produce.
 - **Notification.** A macOS banner arrives the way a real one does, subtitled
-  `window ▸ pane`, next to a live agent dashboard.
+  `window ▸ pane`, next to a live agent dashboard whose tallies count up on first view.
+- **The score keeps playing.** Lane states advance every nine seconds, so agents finish,
+  go idle, and start asking for input while you read.
+- **Live panes.** The split-tree panes cycle through plausible output instead of sitting
+  as static boxes.
+- **Decode.** Section eyebrows resolve out of noise, monospace-style.
 - **Typing.** The install block types itself out the first time it scrolls into view.
-- **Ambient.** A slow warm drift plus a light film grain, suiting Gruvbox's analogue feel.
+- **Ambient.** A slow warm drift, a pointer-tracking spotlight, a per-cell glow that
+  follows the cursor, a scroll-progress bar drawn as the playhead, and a light film
+  grain suiting Gruvbox's analogue feel.
+
+### The command palette
+
+Soprano has one, so the site has one: press <kbd>⌘P</kbd> / <kbd>Ctrl+P</kbd>, or `/`, or
+click the `⌘P` chip in the header. Subsequence filtering, `↑`/`↓` to move, `↵` to jump,
+`esc` to close. Sections scroll into view; links open in a new tab.
+
+One trap worth remembering if you extend the script: the fuzzy matcher is called
+`fuzzyMatch`, not `score`, because `var score` already refers to the score element and a
+`var` assignment silently clobbers a hoisted function declaration of the same name.
 
 Every one of these is disabled under `prefers-reduced-motion: reduce`, where the split
 tree settles into its finished four-pane state and the install block renders instantly.
