@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soprano — a tiling terminal multiplexer for AI coding agents</title>
+<meta name="description" content="Native macOS tiling multiplexer for running Codex, Claude Code, and OpenCode side by side in real GPU-rendered terminals. Every pane reports what its agent is doing.">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+
+<meta property="og:title" content="Soprano">
+<meta property="og:description" content="A tiling terminal multiplexer for the room full of coding agents you're already running.">
+<meta property="og:type" content="website">
+
+<style>
+:root {
+  --ink:        #08080f;
+  --ink-panel:  #0f0f1e;
+  --ink-raised: #16162b;
+  --line:       #23233f;
+  --line-soft:  #191930;
+  --paper:      #e9e7f2;
+  --muted:      #8f8caa;
+  --violet:     #a78bfa;
+  --violet-deep:#7c3aed;
+
+  --amber:   #fabd2f;
+  --emerald: #34d399;
+  --codex:    #10a37f;
+  --claude:   #da7756;
+  --opencode: #58a6ff;
+
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --measure: 68rem;
+  --gutter: clamp(1.25rem, 5vw, 3rem);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient wash echoing the icon's corner gradient. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, rgba(124, 58, 237, .20), transparent 60%),
+    radial-gradient(50rem 35rem at 95% 5%, rgba(52, 211, 153, .07), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+a { color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── Utility type ─────────────────────────────────────────────── */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Musical staff: five hairlines, used only where a section truly begins. */
+.staff {
+  height: 9px;
+  margin: 0;
+  border: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--line-soft) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: .8;
+}
+
+/* ── Masthead ─────────────────────────────────────────────────── */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.5rem;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: .02em;
+  text-decoration: none;
+}
+
+/* The app icon is dark navy; on a dark page it needs a ring to read as a tile. */
+.mark img {
+  width: 26px;
+  height: 26px;
+  display: block;
+  border-radius: 7px;
+  box-shadow: 0 0 0 1px var(--line), 0 1px 6px rgba(0, 0, 0, .5);
+}
+
+.masthead nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+}
+
+.masthead nav a { color: var(--muted); text-decoration: none; transition: color .18s; }
+.masthead nav a:hover { color: var(--paper); }
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+
+.hero { padding-block: clamp(2rem, 6vw, 3.5rem) clamp(2rem, 5vw, 3rem); }
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(3.25rem, 11vw, 7rem);
+  line-height: .92;
+  letter-spacing: -.02em;
+  margin: 1rem 0 0;
+}
+
+/* Lede and supporting copy sit side by side so the hero stays short enough
+   to leave the score visible on load. */
+.hero-copy {
+  display: grid;
+  gap: 1.25rem 3rem;
+  margin-top: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .hero-copy { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+}
+
+.hero .lede {
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  line-height: 1.4;
+  max-width: 26ch;
+  margin: 0;
+  color: var(--paper);
+}
+
+.hero .sub {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ── The score ────────────────────────────────────────────────── */
+
+.score {
+  margin-top: clamp(2rem, 4vw, 2.75rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--ink-panel), var(--ink));
+  padding: clamp(1rem, 3vw, 1.75rem);
+  overflow: hidden;
+}
+
+.score-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: .35rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.score-head .where {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+}
+
+.lane {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr 9.5rem;
+  align-items: center;
+  gap: clamp(.6rem, 2vw, 1.25rem);
+  padding-block: .7rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.lane:last-of-type { border-bottom: 0; }
+
+.lane .voice {
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.lane .voice::before {
+  content: "";
+  width: 3px;
+  height: 1.05rem;
+  border-radius: 2px;
+  background: var(--tone, var(--muted));
+  flex: none;
+}
+
+.lane .voice span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ink-raised);
+  overflow: hidden;
+}
+
+.track i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  border-radius: 3px;
+  background: var(--tone, var(--muted));
+  opacity: .85;
+  transform: scaleX(var(--rest, .3));
+}
+
+.state {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.state::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* The one lane that wants you. Everything else stays quiet. */
+.lane.waiting { --tone: var(--amber); }
+.lane.waiting .voice { color: var(--amber); }
+.lane.waiting .state { color: var(--amber); }
+.lane.waiting .track i { opacity: 1; transform: scaleX(1); }
+.lane.waiting .state::before { box-shadow: 0 0 0 0 rgba(250, 189, 47, .55); }
+
+.lane.ready { --tone: var(--emerald); }
+.lane.ready .state { color: var(--emerald); }
+
+.score-foot {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lane.working .track i { animation: advance var(--dur, 9s) cubic-bezier(.4, 0, .5, 1) infinite; }
+  .lane.waiting .state::before { animation: ping 2.2s ease-out infinite; }
+
+  @keyframes advance {
+    0%   { transform: scaleX(.04); opacity: .9; }
+    92%  { transform: scaleX(1);   opacity: .9; }
+    100% { transform: scaleX(1);   opacity: .35; }
+  }
+  @keyframes ping {
+    0%   { box-shadow: 0 0 0 0 rgba(250, 189, 47, .5); }
+    70%  { box-shadow: 0 0 0 7px rgba(250, 189, 47, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(250, 189, 47, 0); }
+  }
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  padding: .7rem 1.15rem;
+  border-radius: 8px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  color: var(--paper);
+  transition: border-color .18s, background .18s, transform .18s;
+}
+
+.btn:hover { transform: translateY(-1px); }
+
+.btn.primary {
+  background: var(--violet-deep);
+  border-color: var(--violet-deep);
+  color: #fff;
+}
+
+.btn.primary:hover { background: var(--violet); border-color: var(--violet); }
+.btn.ghost:hover { border-color: var(--violet); background: rgba(167, 139, 250, .08); }
+
+/* ── Sections ─────────────────────────────────────────────────── */
+
+.section { padding-block: clamp(3.5rem, 9vw, 6rem); }
+
+.section h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.08;
+  letter-spacing: -.015em;
+  margin: 1rem 0 0;
+  max-width: 20ch;
+}
+
+.section .body {
+  max-width: 58ch;
+  margin-top: 1.25rem;
+  color: var(--muted);
+}
+
+.section .body strong { color: var(--paper); font-weight: 600; }
+
+/* ── States ───────────────────────────────────────────────────── */
+
+.states {
+  list-style: none;
+  padding: 0;
+  margin: 2.5rem 0 0;
+  display: grid;
+  /* Exactly three columns: six states fill two rows with no orphan cells. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.states li {
+  background: var(--ink-panel);
+  padding: 1.1rem 1.25rem;
+}
+
+.states dfn {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .13em;
+  font-style: normal;
+  color: var(--tone, var(--muted));
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.states dfn::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.states p { margin: .5rem 0 0; font-size: .92rem; color: var(--muted); }
+
+/* ── Capabilities ─────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1.75rem 2.5rem;
+  margin-top: 2.5rem;
+}
+
+.grid h3 {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 .4rem;
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+}
+
+.grid kbd {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--violet);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: .1rem .4rem;
+  background: var(--ink-panel);
+  white-space: nowrap;
+}
+
+.grid p { margin: 0; color: var(--muted); font-size: .94rem; }
+
+/* ── Install ──────────────────────────────────────────────────── */
+
+.terminal {
+  margin-top: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--ink-panel);
+  overflow: hidden;
+}
+
+.terminal header {
+  padding: .6rem 1rem;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.terminal pre {
+  margin: 0;
+  padding: 1.25rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  line-height: 1.85;
+  color: var(--paper);
+}
+
+.terminal .c { color: var(--muted); }
+.terminal .p { color: var(--emerald); user-select: none; }
+
+.note {
+  margin-top: 1.5rem;
+  max-width: 58ch;
+  font-size: .9rem;
+  color: var(--muted);
+}
+
+.note code {
+  font-family: var(--font-mono);
+  font-size: .85em;
+  color: var(--paper);
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+
+.foot {
+  padding-block: 2.5rem 3.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: var(--muted);
+}
+
+.foot a { color: var(--muted); text-decoration: none; }
+.foot a:hover { color: var(--paper); }
+.foot .links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .states { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .lane { grid-template-columns: 1fr auto; row-gap: .5rem; }
+  .lane .track { grid-column: 1 / -1; order: 3; }
+  .state { justify-content: flex-start; }
+  .states { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="mark" href="/">
+      <img src="assets/icon.svg" alt="">
+      Soprano
+    </a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/frknue/soprano">GitHub</a>
+    </nav>
+  </header>
+</div>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Native macOS · Swift 6 + libghostty · MIT</p>
+      <h1>Soprano</h1>
+
+      <div class="hero-copy">
+        <p class="lede">A tiling terminal multiplexer for the room full of coding agents you're already running.</p>
+
+        <p class="sub">
+          Codex, Claude Code, and OpenCode side by side in real GPU-rendered terminals.
+          Every pane says what its agent is doing, and macOS tells you which one is
+          waiting on you.
+        </p>
+      </div>
+
+      <!-- The score: four voices, one conductor. -->
+      <div class="score">
+        <div class="score-head">
+          <p class="eyebrow">Live pane status</p>
+          <p class="where">soprano ▸ window 1</p>
+        </div>
+
+        <div class="lane working" style="--tone: var(--codex); --dur: 11s; --rest: .55">
+          <p class="voice"><span>Codex</span></p>
+          <div class="track"><i></i></div>
+          <p class="state">Working</p>
+        </div>
+
+        <div class="lane waiting">
+          <p class="voice"><span>Claude Code</span></p>
+          <div class="track"><i></i></div>
+          <p class="state">Needs input</p>
+        </div>
+
+        <div class="lane working" style="--tone: var(--opencode); --dur: 7s; --rest: .3">
+          <p class="voice"><span>OpenCode</span></p>
+          <div class="track"><i></i></div>
+          <p class="state">Working</p>
+        </div>
+
+        <div class="lane ready" style="--rest: 0">
+          <p class="voice"><span>Terminal 1</span></p>
+          <div class="track"><i></i></div>
+          <p class="state">Ready</p>
+        </div>
+
+        <p class="score-foot">
+          Driven by real agent lifecycle hooks — not output scraping.
+        </p>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" href="#install">Install Soprano</a>
+        <a class="btn ghost" href="https://github.com/frknue/soprano">Read the source</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap"><hr class="staff"></div>
+
+  <div class="wrap">
+    <section class="section" id="how">
+      <p class="eyebrow">The problem</p>
+      <h2>One agent is easy. Four is a scheduling problem.</h2>
+      <div class="body">
+        <p>
+          They run asynchronously, they all stop to ask you something eventually, and
+          terminal tabs hide the one that is blocked. So you cycle through tabs looking
+          for the agent that went quiet for the wrong reason.
+        </p>
+        <p>
+          Soprano is built around the question you actually have all day:
+          <strong>which agent needs me right now?</strong> Panes answer it themselves.
+        </p>
+      </div>
+
+      <ul class="states">
+        <li>
+          <dfn>Starting</dfn>
+          <p>The launcher is up, the agent has not reported in yet.</p>
+        </li>
+        <li style="--tone: var(--codex)">
+          <dfn>Working</dfn>
+          <p>A turn is in flight. Leave it alone.</p>
+        </li>
+        <li style="--tone: var(--emerald)">
+          <dfn>Ready</dfn>
+          <p>Idle and waiting for a prompt.</p>
+        </li>
+        <li style="--tone: var(--amber)">
+          <dfn>Needs input</dfn>
+          <p>A question or a permission prompt. This is the one you came for.</p>
+        </li>
+        <li style="--tone: var(--claude)">
+          <dfn>Error</dfn>
+          <p>The turn failed. The pane keeps the state until you look.</p>
+        </li>
+        <li>
+          <dfn>Stopped</dfn>
+          <p>The process exited. The layout stays where you left it.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="wrap"><hr class="staff"></div>
+
+  <div class="wrap">
+    <section class="section">
+      <p class="eyebrow">What you get</p>
+      <h2>A real terminal, arranged the way you think.</h2>
+
+      <div class="grid">
+        <div>
+          <h3>Notifications that name the place</h3>
+          <p>Subtitled <em>window ▸ pane</em>. Clicking one activates Soprano and focuses that exact tab — no hunting.</p>
+        </div>
+        <div>
+          <h3>libghostty surfaces</h3>
+          <p>Every pane is a real GPU-rendered terminal hosted in AppKit. No Electron, no web view, no reimplemented VT parser.</p>
+        </div>
+        <div>
+          <h3>Splits on a prefix <kbd>⌃A</kbd></h3>
+          <p>tmux-style chords for splitting and resizing, plus <kbd>⌃H/J/K/L</kbd> to move between panes with no prefix at all.</p>
+        </div>
+        <div>
+          <h3>Depth <kbd>⌃A I</kbd></h3>
+          <p>Any pane opens a private workspace on the window's z-axis, so one pane becomes a whole layout while its siblings keep running.</p>
+        </div>
+        <div>
+          <h3>A browser your agents drive <kbd>⌘B</kbd></h3>
+          <p>A WebKit pane splits off to the right. From inside any terminal, <code>"$SOPRANO_BIN" browser click @e1</code> works.</p>
+        </div>
+        <div>
+          <h3>Layouts that come back</h3>
+          <p>The last workspace restores on launch, and <kbd>⇧⌘S</kbd> saves named sessions you can return to.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap"><hr class="staff"></div>
+
+  <div class="wrap">
+    <section class="section" id="install">
+      <p class="eyebrow">Install</p>
+      <h2>Build it from source.</h2>
+
+      <div class="body">
+        <p>
+          Soprano links libghostty statically, so the first build compiles it once.
+          After that you only repeat it when the ghostty submodule moves.
+        </p>
+      </div>
+
+      <div class="terminal">
+        <header>Fresh clone to installed app</header>
+<pre><span class="c"># 1 · Toolchain. Homebrew Swift is required — the system CLT Swift has broken SPM.</span>
+<span class="p">$</span> brew install swift zig
+<span class="p">$</span> xcodebuild -downloadComponent MetalToolchain
+
+<span class="c"># 2 · Clone with the ghostty submodule</span>
+<span class="p">$</span> git clone --recurse-submodules https://github.com/frknue/soprano.git
+<span class="p">$</span> cd soprano
+
+<span class="c"># 3 · Build libghostty once (a few minutes)</span>
+<span class="p">$</span> ./scripts/build-ghostty.sh
+
+<span class="c"># 4 · Build the release app into /Applications</span>
+<span class="p">$</span> ./install.sh</pre>
+      </div>
+
+      <p class="note">
+        <strong>Requirements:</strong> macOS 14 Sonoma or newer · full Xcode with the
+        Metal Toolchain (Command Line Tools alone cannot build libghostty) ·
+        Homebrew Swift 6.2+ · Zig 0.15.2+.
+      </p>
+    </section>
+  </div>
+</main>
+
+<div class="wrap">
+  <hr class="staff">
+  <footer class="foot">
+    <p>Soprano is free software under the MIT license.</p>
+    <div class="links">
+      <a href="https://github.com/frknue/soprano">Source</a>
+      <a href="https://github.com/frknue/soprano/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/frknue/soprano/issues">Issues</a>
+      <a href="https://github.com/ghostty-org/ghostty">Built on ghostty</a>
+    </div>
+  </footer>
+</div>
+
+</body>
+</html>
