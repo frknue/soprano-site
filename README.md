@@ -16,6 +16,12 @@ python3 -m http.server 8000
 
 ## Design notes
 
+The mark is the app icon itself (`logos/edi-1a-active-pane-1024.png` in the app repo):
+three panes with the active one glowing. Sampled straight out of the PNG, its background
+is `#282828` and its active pane is `#fe8019` — gruvbox `bg` and `accent` exactly, so the
+icon and the page were already in the same palette before either was designed around the
+other.
+
 The palette is **Gruvbox Dark**, taken value-for-value from `AppTheme.gruvboxDark` in
 `Sources/Soprano/Config/Theme.swift` — the app's own default theme. Nothing here is a
 generic Gruvbox approximation, so the site and the product cannot drift apart.
@@ -48,11 +54,24 @@ right now?* — rather than showing a screenshot in a browser frame.
 - **Playhead.** A conductor's baton sweeps the score on a 9s loop.
 - **Split tree.** In the Layout section, one pane becomes four on a 14s loop, following
   the same percentages a real `SplitNode` tree would produce.
+- **Notification.** A macOS banner arrives the way a real one does, subtitled
+  `window ▸ pane`, next to a live agent dashboard.
 - **Typing.** The install block types itself out the first time it scrolls into view.
 - **Ambient.** A slow warm drift plus a light film grain, suiting Gruvbox's analogue feel.
 
 Every one of these is disabled under `prefers-reduced-motion: reduce`, where the split
 tree settles into its finished four-pane state and the install block renders instantly.
+
+## The theme switcher
+
+All seven built-in themes are in the page as data, copied field-for-field from
+`Theme.swift`, and the buttons in the Themes section rewrite the same CSS custom
+properties the whole page is built on. Switching recolours everything — ambient wash,
+notification banner, status dots, the playhead — because nothing on the page hardcodes a
+colour. The choice is kept in `localStorage` and does not touch the app's own settings.
+
+When a theme is added to `Theme.swift`, add it to the `THEMES` array in `index.html` and
+it appears here too. The names are asserted to match the app's `name:` fields.
 
 ## Deploying
 
