@@ -92,14 +92,18 @@ it appears here too. The names are asserted to match the app's `name:` fields.
 
 ## Deploying
 
-GitHub Pages, from the `main` branch root:
+**Live at <https://frknue.github.io/soprano-site/>** — GitHub Pages, `main` branch root.
+Pushing to `main` redeploys; it takes a minute or two.
 
-1. **Settings → Pages → Source:** Deploy from a branch, `main`, `/ (root)`.
-2. Add a `CNAME` file containing the bare domain, e.g. `soprano.sh`.
-3. At the DNS host, point the apex at GitHub Pages:
+To move it onto a custom domain:
+
+1. Add a `CNAME` file containing the bare domain, e.g. `soprano.sh`.
+2. At the DNS host, point the apex at GitHub Pages:
    `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`.
-4. Back in **Settings → Pages**, set the custom domain and tick **Enforce HTTPS** once
-   the certificate is issued.
+3. In **Settings → Pages**, set the custom domain and tick **Enforce HTTPS** once the
+   certificate is issued.
+4. Update `og:url` and `og:image` in `index.html` — social scrapers do not resolve
+   relative URLs, so both are absolute and still point at the github.io address.
 
 The `CNAME` file is deliberately absent until the domain is actually registered —
 committing one for a domain you do not own breaks the Pages deployment.
