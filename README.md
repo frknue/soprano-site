@@ -16,79 +16,80 @@ python3 -m http.server 8000
 
 ## Design notes
 
-The mark is the app icon itself (`logos/edi-1a-active-pane-1024.png` in the app repo):
-three panes with the active one glowing. Sampled straight out of the PNG, its background
-is `#282828` and its active pane is `#fe8019` — gruvbox `bg` and `accent` exactly, so the
-icon and the page were already in the same palette before either was designed around the
-other.
+The site is set in **Folio**, the design the whole Soprano family shares (Soprano, Soprano
+Git, Soprano Cast, Soprano Tab): paper and ink, a serif voice for titles, and one sienna
+pencil mark wherever the keyboard is. It follows `prefers-color-scheme`: **Paper** in light
+mode, **Ink** in dark. The values are the app's own Folio Paper and Folio Ink themes, so the
+site and the product cannot drift apart.
 
-The palette is **Gruvbox Dark**, taken value-for-value from `AppTheme.gruvboxDark` in
-`Sources/Soprano/Config/Theme.swift` — the app's own default theme. Nothing here is a
-generic Gruvbox approximation, so the site and the product cannot drift apart.
+| Slot | Paper | Ink | Role |
+|---|---|---|---|
+| `--bg-base` | `#f6f2ea` | `#1d1b18` | Page ground, terminals |
+| `--bg-panel` | `#ede7db` | `#181613` | Title bars, pane headers, status bar |
+| `--bg-raised` | `#fcfaf5` | `#26231f` | Panels, focused header, palette, keycaps |
+| `--text-primary` | `#2b2620` | `#e2dacb` | Ink: text and the primary button |
+| `--text-muted` | `#62594d` | `#a0968a` | Body copy, eyebrows, hints |
+| `--accent` | `#a34a17` | `#e08a52` | Sienna: focus rule, pencil tick, caret, cursor only |
+| `--border-subtle` · `--border-strong` | `#e0d8c9` · `#cbc0ad` | `#322e29` · `#443e37` | Hairlines · control edges and keycaps |
+| `--success` · `--yellow` · `--blue` · `--danger` | `#456b30` · `#835f0b` · `#2f5f8a` · `#ae2f3c` | `#97ae76` · `#d6aa4f` · `#86a6cb` · `#e0707a` | WORKING · NEEDS INPUT · READY and attention · ERROR |
 
-| Token | Value | Role |
-|---|---|---|
-| `--bg-hard` · `--bg` | `#1d2021` · `#282828` | Panels and page ground |
-| `--fg0` · `--fg` | `#fbf1c7` · `#ebdbb2` | Wordmark and body text |
-| `--orange` | `#fe8019` | `accent` — primary action, hover rules |
-| `--yellow` | `#fabd2f` | `accentStrong` — `NEEDS INPUT`, the playhead |
-| `--green` | `#b8bb26` | `success` — `READY`, shell prompts |
-| `--red` | `#fb4934` | `danger` — `ERROR` |
-| `--aqua` · `--blue` | `#8ec07c` · `#83a598` | Agent voices |
+The rest (selection, attention wash, veil, keycap fill) are derived from those slots with
+the same formulas the apps use, so a third-party theme inherits them. Colour only ever means
+status: every status also carries a shape (ring = starting/ready/stopped, dot =
+working/needs input, diamond = error). Regions are separated by one 1 px rule, never boxes
+or double rules. The primary button is ink, not accent.
 
-Agents map onto the palette rather than carrying their own brand colours, so the page
-stays in one key: Codex → aqua, Claude Code → orange, OpenCode → blue.
+**Type** is system fonts only — no webfonts, no CDN, nothing to self-host:
 
-Type pairs a classical serif for the wordmark against monospace for every status label —
-a musical name set against a terminal voice. Both stacks are system fonts, so there are
-no webfont requests and nothing to self-host.
+- Serif `ui-serif, "New York", "Iowan Old Style", Georgia, serif` — the wordmark, headlines,
+  captions and figures, and only at 15 px and up.
+- Sans `system-ui, -apple-system, BlinkMacSystemFont, sans-serif` — everything you scan.
+- Mono `ui-monospace, "SF Mono", Menlo, monospace` — terminals, paths, code.
+
+Keycaps follow the family's K1 rule: one cap per chord (`⌘P`, `⇧⌘D`, `⌃A`), a prefix
+sequence as separate caps (`⌃A` then `[`), letter legends uppercase, `esc` lowercase.
+
+**Icons.** `assets/icons/` holds the family's app icons, Paper (`<app>.svg`) and Ink
+(`<app>-dark.svg`), copied from the Folio design; the page swaps them with the mode.
+`assets/soprano-icon-{1024,256,64}.png` (Paper) and `assets/soprano-icon-dark-*.png` (Ink)
+are rendered from those SVGs with `rsvg-convert -w N -h N` and serve as favicons.
+`assets/apple-touch-icon.png` (180) and `assets/og-image.png` (1024, the `og:image`) are
+opaque and full-bleed: rendered from a copy of `soprano.svg` cropped to the squircle
+(`viewBox="100 100 824 824"`, square background, no radius, shadow or edge stroke), because
+iOS fills transparent touch-icon pixels with black. The UI glyphs are inline Lucide paths
+(ISC) in one SVG sprite.
 
 ## Motion
 
-The hero is "the score": one lane per agent, running in parallel, with a single lane
-stalling into amber. It states the product's actual question — *which agent needs me
-right now?* — rather than showing a screenshot in a browser frame.
-
-- **Entrance.** The wordmark's letters rise one at a time, then the score's lanes enter
-  in sequence, the way voices enter a score.
-- **Playhead.** A conductor's baton sweeps the score on a 9s loop.
-- **Split tree.** In the Layout section, one pane becomes four on a 14s loop, following
-  the same percentages a real `SplitNode` tree would produce.
-- **Notification.** A macOS banner arrives the way a real one does, subtitled
-  `window ▸ pane`, next to a live agent dashboard whose tallies count up on first view.
-- **The score keeps playing.** Lane states advance every nine seconds, so agents finish,
-  go idle, and start asking for input while you read.
-- **Live panes.** The split-tree panes cycle through plausible output instead of sitting
-  as static boxes.
-- **Decode.** Section eyebrows resolve out of noise, monospace-style.
-- **Typing.** The install block types itself out the first time it scrolls into view.
-- **Ambient.** A slow warm drift, a pointer-tracking spotlight, a per-cell glow that
-  follows the cursor, a scroll-progress bar drawn as the playhead, and a light film
-  grain suiting Gruvbox's analogue feel.
+Folio is static. There is no grain, drift, spotlight, typing, sweep, count-up or cycling
+copy: the hero's lanes, the split tree and the install block are drawn in their final state.
+The only movement on the page is the command palette fading in and out, opacity only, over
+120 ms — and under `prefers-reduced-motion: reduce` that is 0 ms too. Section jumps scroll
+instantly.
 
 ### The command palette
 
-Soprano has one, so the site has one: press <kbd>⌘P</kbd> / <kbd>Ctrl+P</kbd>, or `/`, or
-click the `⌘P` chip in the header. Subsequence filtering, `↑`/`↓` to move, `↵` to jump,
-`esc` to close. Sections scroll into view; links open in a new tab.
-
-One trap worth remembering if you extend the script: the fuzzy matcher is called
-`fuzzyMatch`, not `score`, because `var score` already refers to the score element and a
-`var` assignment silently clobbers a hoisted function declaration of the same name.
-
-Every one of these is disabled under `prefers-reduced-motion: reduce`, where the split
-tree settles into its finished four-pane state and the install block renders instantly.
+Soprano has one, so the site has one: press <kbd>⌘P</kbd> / <kbd>⌃P</kbd>, or `/`, or
+click the **Jump to…** field in the header (its keycap reads `⌃P` off a Mac). Subsequence
+filtering with the matched characters in semibold (sienna on the selected row), tighter
+matches first, `↑`/`↓` to move, `↵` to open, `esc` to close. Sections scroll into view;
+links open in a new tab.
 
 ## The theme switcher
 
-All seven built-in themes are in the page as data, copied field-for-field from
-`Theme.swift`, and the buttons in the Themes section rewrite the same CSS custom
-properties the whole page is built on. Switching recolours everything — ambient wash,
-notification banner, status dots, the playhead — because nothing on the page hardcodes a
-colour. The choice is kept in `localStorage` and does not touch the app's own settings.
+Folio plus the seven third-party themes from `Theme.swift` (Gruvbox Dark, Catppuccin
+Mocha, Dracula, Solarized Dark, Nord, Tokyo Night, Atom One Dark) are in the page as data,
+copied value for value: the 16 `ThemeColors` slots and the full terminal palette. Picking
+one in the Themes section rewrites the same custom properties the page is built on, so the
+whole page — terminals and ANSI colours included — recolours. Third-party themes are dark
+only and switch the page to Ink; they inherit Folio's formulas (attention turns yellow when
+the accent sits within 40° of blue; `raised` mixes 5 % ink into the panel when `bgRaised`
+equals `bgPanel`). Folio keeps following the system appearance live.
 
-When a theme is added to `Theme.swift`, add it to the `THEMES` array in `index.html` and
-it appears here too. The names are asserted to match the app's `name:` fields.
+The choice is kept in `localStorage` under `soprano-theme` and does not touch the app's
+own settings. Unknown ids — including the ids this page stored before Folio — fall back to
+Folio. When a theme is added to `Theme.swift`, add it to the `THEMES` array in `index.html`
+and it appears here too.
 
 ## Deploying
 
