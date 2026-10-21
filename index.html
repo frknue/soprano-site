@@ -8,7 +8,7 @@
 <meta name="description" content="Native macOS tiling multiplexer for running Codex, Claude Code, and OpenCode side by side in real GPU-rendered terminals. Every pane reports what its agent is doing.">
 <link rel="icon" href="assets/soprano-icon-256.png" type="image/png">
 <link rel="icon" href="assets/soprano-icon-dark-256.png" type="image/png" media="(prefers-color-scheme: dark)">
-<link rel="apple-touch-icon" href="assets/soprano-icon-256.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 
 <meta property="og:title" content="Soprano">
 <meta property="og:description" content="A tiling terminal multiplexer for the room full of coding agents you're already running.">
@@ -16,7 +16,7 @@
 <!-- Social scrapers do not resolve relative URLs, so these stay absolute.
      Update both when the site moves to its own domain. -->
 <meta property="og:url" content="https://frknue.github.io/soprano-site/">
-<meta property="og:image" content="https://frknue.github.io/soprano-site/assets/soprano-icon-1024.png">
+<meta property="og:image" content="https://frknue.github.io/soprano-site/assets/og-image.png">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
@@ -158,7 +158,7 @@
    Base
    ══════════════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; }
-html { background: var(--bg-base); scroll-padding-top: 76px; scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+html { background: var(--bg-base); scroll-padding-top: 76px; scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0; overflow-x: hidden;
   background: var(--bg-base); color: var(--text-primary);
@@ -488,9 +488,10 @@ button { font: inherit; color: inherit; }
 /* themes */
 .themes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
 .theme { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; border-radius: var(--radius-card); }
-.theme:focus-visible { outline: none; }
+/* Selected = solid ring on the sample; keyboard focus = dashed ring around the whole tile, so the two never look alike. */
+.theme:focus-visible { outline: 2px dashed var(--focus-mark); outline-offset: 6px; border-radius: 10px; }
 .sample { position: relative; height: 128px; border-radius: var(--radius-card); overflow: hidden; box-shadow: 0 0 0 1px var(--border-subtle); display: flex; }
-.theme[aria-pressed="true"] .sample, .theme:focus-visible .sample { outline: 2px solid var(--focus-mark); outline-offset: 3px; }
+.theme[aria-pressed="true"] .sample { outline: 2px solid var(--focus-mark); outline-offset: 3px; }
 .sample-inner { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-base); }
 .sample .pane { flex: 1; background: var(--bg-base); }
 .sample .pane-header { height: 26px; padding: 0 8px; gap: 6px; }
@@ -588,7 +589,7 @@ button { font: inherit; color: inherit; }
   .appwin .split-main > .split-divider.is-vertical { width: auto; height: 1px; }
   .appwin .split-side { flex: none; height: 460px; }
   .appwin .term { font-size: 11px; line-height: 15px; padding: 8px 10px; }
-  .desk .menubar-item { display: none; }
+  .desk .menubar-item, .desk .tpl { display: none; }
 }
 @media (max-width: 600px) {
   .wrap { width: calc(100% - 40px); }

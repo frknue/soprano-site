@@ -52,8 +52,12 @@ sequence as separate caps (`⌃A` then `[`), letter legends uppercase, `esc` low
 **Icons.** `assets/icons/` holds the family's app icons, Paper (`<app>.svg`) and Ink
 (`<app>-dark.svg`), copied from the Folio design; the page swaps them with the mode.
 `assets/soprano-icon-{1024,256,64}.png` (Paper) and `assets/soprano-icon-dark-*.png` (Ink)
-are rendered from those SVGs with `rsvg-convert -w N -h N` and serve as favicon, touch icon
-and `og:image`. The UI glyphs are inline Lucide paths (ISC) in one SVG sprite.
+are rendered from those SVGs with `rsvg-convert -w N -h N` and serve as favicons.
+`assets/apple-touch-icon.png` (180) and `assets/og-image.png` (1024, the `og:image`) are
+opaque and full-bleed: rendered from a copy of `soprano.svg` cropped to the squircle
+(`viewBox="100 100 824 824"`, square background, no radius, shadow or edge stroke), because
+iOS fills transparent touch-icon pixels with black. The UI glyphs are inline Lucide paths
+(ISC) in one SVG sprite.
 
 ## Motion
 
